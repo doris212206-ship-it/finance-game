@@ -36,6 +36,7 @@ def load_stock_data():
     # 將隨機區間記錄在 df.attrs 中，方便後續在結算畫面揭曉
     df.attrs['history_start'] = start_str
     df.attrs['history_end'] = end_str
+    df.attrs['ticker'] = ticker
 
     # ===== 防呆處理 =====
     df = df.dropna()
