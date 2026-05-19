@@ -18,7 +18,7 @@ if "initialized" not in st.session_state:
     if hasattr(st.session_state.df.columns, 'levels'):
         st.session_state.df.columns = st.session_state.df.columns.get_level_values(0)
         
-    st.session_state.MAX_WEEKS = 52
+    st.session_state.MAX_WEEKS = 156
     st.session_state.TARGET = 800000
     st.session_state.START_OFFSET = 30
     st.session_state.week = 1
@@ -37,6 +37,8 @@ if "initialized" not in st.session_state:
     st.session_state.advisor = FinancialAdvisor()
     st.session_state.logs = ["🎮 歡迎來到【華爾街見習生】網頁版！", "準備好開始你的投資之旅了嗎？請在左方進行操作！"]
     st.session_state.game_over = False
+    st.session_state.total_salary_net = 0   # 累計薪水淨收入
+    st.session_state.total_event_net = 0    # 累計隨機事件淨收入
 
 # =====================
 # 側邊欄：投資儀表板
@@ -62,7 +64,15 @@ with st.sidebar:
     total_asset = st.session_state.cash + st.session_state.stock * current_price
     unrealized = (current_price - st.session_state.avg_price) * st.session_state.stock if st.session_state.stock > 0 else 0
     
+    # 取得目前這週對應的真實日期
+    current_date = df["Date"].iloc[day_index]
+    if hasattr(current_date, 'strftime'):
+        current_date_str = current_date.strftime("%Y年%m月%d日")
+    else:
+        current_date_str = str(current_date)[:10]
+    
     st.metric("週數", f"{display_week} / {st.session_state.MAX_WEEKS}")
+    st.metric("📅 目前日期", current_date_str)
     st.metric("當前股價", f"${current_price:.2f}")
     
     st.divider()
@@ -96,7 +106,7 @@ with st.expander("📖 遊戲規則與背景 (點擊展開/收起)", expanded=(s
 
     **【你的任務】**
     - 💰 **起始資金**：$500,000
-    - ⏳ **遊戲時間**：52 週（1 年）
+    - ⏳ **遊戲時間**：156 週（3 年）
     - 🏆 **目標總資產**：$800,000 (達標即可通關！)
     - 💼 **薪水機制**：每 4 週發薪 $50,000，同時扣除生活費 $40,000，淨入帳 $10,000
 
@@ -156,7 +166,7 @@ with main_col_left:
         y_max = max(y_max, st.session_state.avg_price * 1.02)
         
     ax.set_ylim(y_min, y_max)
-    ax.set_title(f"Market View (Week {display_week} / {st.session_state.MAX_WEEKS})", fontsize=14, fontweight="bold")
+    ax.set_title(f"Market View - {current_date_str}  (Week {display_week} / {st.session_state.MAX_WEEKS})", fontsize=13, fontweight="bold")
     ax.grid(True, linestyle="--", alpha=0.4)
     ax.legend(loc='upper left', fontsize='small')
     
@@ -168,6 +178,23 @@ with main_col_left:
     if st.session_state.game_over:
         st.success("🎉 遊戲結束！")
         st.subheader(f"💰 最終總資產：${total_asset:,.2f} (目標: ${st.session_state.TARGET:,.0f})")
+        
+        # 計算純投資損益
+        # 公式：最終資產 - 起始資金 - 累計薪水淨收入 - 累計事件淨收入
+        START_CAPITAL = 500000
+        invest_gain = total_asset - START_CAPITAL - st.session_state.total_salary_net - st.session_state.total_event_net
+        
+        st.divider()
+        st.markdown("#### 📊 投資損益分析")
+        col_a, col_b, col_c = st.columns(3)
+        col_a.metric("起始資金", f"${START_CAPITAL:,.0f}")
+        col_b.metric("薪水淨收入", f"${st.session_state.total_salary_net:,.0f}")
+        col_c.metric("事件淨收益", f"${st.session_state.total_event_net:,.0f}")
+        
+        if invest_gain >= 0:
+            st.success(f"📈 **你靠投資賺了 ${invest_gain:,.0f}！**（報酬率：{invest_gain/START_CAPITAL*100:.1f}%）")
+        else:
+            st.error(f"📉 **你靠投資虧了 ${abs(invest_gain):,.0f}。**（虧損率：{abs(invest_gain)/START_CAPITAL*100:.1f}%）")
         
         if total_asset >= st.session_state.TARGET:
             st.balloons()
@@ -247,6 +274,7 @@ with main_col_left:
             event_logs = []
             event = draw_event()
             st.session_state.cash += event["amount"]
+            st.session_state.total_event_net += event["amount"]  # 追蹤累計
             if event["amount"] != 0:
                 event_logs.append(f"📌 【隨機事件】：{event['name']}")
                 if event["amount"] > 0:
@@ -260,7 +288,27 @@ with main_col_left:
                 living_cost = 40000
                 net = salary - living_cost
                 st.session_state.cash += net
+                st.session_state.total_salary_net += net  # 追蹤累計
                 event_logs.append(f"💼 【發薪日】薪資 ${salary:,} 已入帳，扣除生活費 ${living_cost:,}，實際淨入帳 ${net:,}")
+            
+            # ===== 現金不足時強制賣股 =====
+            if st.session_state.cash < 0 and st.session_state.stock > 0:
+                deficit = abs(st.session_state.cash)
+                # 計算需要賣多少股才能補回（含交易稅手續費）
+                fee_rate = 0.001425 + 0.003  # 買手續費 + 交易稅
+                shares_needed = int(deficit / (current_price * (1 - fee_rate))) + 1
+                shares_to_sell = min(shares_needed, st.session_state.stock)
+                
+                fee = current_price * shares_to_sell * 0.001425
+                tax = current_price * shares_to_sell * 0.003
+                proceeds = current_price * shares_to_sell - fee - tax
+                
+                st.session_state.cash += proceeds
+                st.session_state.stock -= shares_to_sell
+                if st.session_state.stock == 0:
+                    st.session_state.avg_price = 0
+                    
+                event_logs.append(f"🚨 【強制賣股】現金不足！系統自動賣出 {shares_to_sell} 股以補充流動性 (入帳 ${proceeds:,.0f})")
                     
             # 更新狀態
             st.session_state.prev_price = current_price

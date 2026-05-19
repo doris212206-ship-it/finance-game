@@ -17,8 +17,8 @@ def load_stock_data():
     start_day = random.randint(1, 28) # 避免大小月報錯
     
     start_date = datetime(start_year, start_month, start_day)
-    # 抓取 2 年的資料，確保 52 週有足夠的交易日
-    end_date = start_date + timedelta(days=730)
+    # 抓取 4 年的資料，確保 156 週（3 年）有足夠的交易日
+    end_date = start_date + timedelta(days=1460)
     
     start_str = start_date.strftime('%Y-%m-%d')
     end_str = end_date.strftime('%Y-%m-%d')
