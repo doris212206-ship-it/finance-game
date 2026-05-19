@@ -18,12 +18,12 @@ if "initialized" not in st.session_state:
     if hasattr(st.session_state.df.columns, 'levels'):
         st.session_state.df.columns = st.session_state.df.columns.get_level_values(0)
         
-    st.session_state.MAX_WEEKS = 20
-    st.session_state.TARGET = 150000
+    st.session_state.MAX_WEEKS = 52
+    st.session_state.TARGET = 800000
     st.session_state.START_OFFSET = 30
     st.session_state.week = 1
     
-    st.session_state.cash = 100000
+    st.session_state.cash = 500000
     st.session_state.stock = 0
     st.session_state.avg_price = 0
     
@@ -71,14 +71,11 @@ with st.sidebar:
     col1.metric("現金 (Cash)", f"${st.session_state.cash:,.0f}")
     col2.metric("持股 (Stock)", f"{st.session_state.stock} 股")
     
-    st.metric("平均成本", f"${st.session_state.avg_price:.2f}")
     st.metric("未實現損益", f"${unrealized:,.0f}", delta=float(unrealized))
     
     st.divider()
     
-    st.metric("總資產 (Total Asset)", f"${total_asset:,.0f}", delta=float(total_asset - 100000))
-    st.metric("通關目標", f"${st.session_state.TARGET:,.0f}")
-    st.metric("新手理財積分 (FIQ)", f"{st.session_state.advisor.fiq_score} 分")
+    st.metric("總資產", f"${total_asset:,.0f}", delta=float(total_asset - 500000))
 
 # =====================
 # 遊戲主畫面
@@ -87,15 +84,21 @@ st.title("📈 華爾街見習生：投資模擬遊戲")
 
 with st.expander("📖 遊戲規則與背景 (點擊展開/收起)", expanded=(st.session_state.week == 1)):
     ticker_name = df.attrs.get('ticker', '神秘股票')
+    company_name = df.attrs.get('company_name', ticker_name)
+    sector = df.attrs.get('sector', '未知')
+    industry = df.attrs.get('industry', '未知')
     st.markdown(f"""
     **【遊戲背景】**
     你是一位剛踏入股市的見習生。我們為你準備了一台時光機，將帶你回到過去的某一段真實歷史行情中。
-    🎯 **本局操盤標的：{ticker_name}**
+
+    🎯 **本局操盤標的：{company_name}（{ticker_name}）**
+    🏭 **所屬產業：{sector}｜{industry}**
 
     **【你的任務】**
-    - 💰 **初始資金**：$100,000
-    - ⏳ **遊戲時間**：20 週
-    - 🏆 **目標總資產**：$150,000 (達標即可通關！)
+    - 💰 **起始資金**：$500,000
+    - ⏳ **遊戲時間**：52 週（1 年）
+    - 🏆 **目標總資產**：$800,000 (達標即可通關！)
+    - 💼 **薪水機制**：每 4 週發薪 $50,000，同時扣除生活費 $40,000，淨入帳 $10,000
 
     **【操作說明】**
     - 遊戲每週會推進一次，你必須在「每週五」根據走勢圖做出決策。
@@ -165,28 +168,12 @@ with main_col_left:
     if st.session_state.game_over:
         st.success("🎉 遊戲結束！")
         st.subheader(f"💰 最終總資產：${total_asset:,.2f} (目標: ${st.session_state.TARGET:,.0f})")
-        st.subheader(f"🧠 你的最終理財積分 (FIQ)：{st.session_state.advisor.fiq_score} 分")
-        
-        final_fiq = st.session_state.advisor.fiq_score
-        if final_fiq >= 120:
-            st.info("🎖️ **獲得財商尊號：【👑 傲視華爾街的少年股神】**  \n👉 評語：太厲害了！你擁有極高的克制力，懂得越跌越買、分批停利，完全沒有被市場情緒牽著走，是萬中選一的理性投資人！")
-        elif final_fiq >= 100:
-            st.info("🎖️ **獲得財商尊號：【⚖️ 穩健前行的理性投資人】**  \n👉 評語：表現標準！你懂得基本的操作紀律，也能避開極端的風險。只要保持這個節奏，在現實市場中你也能穩健資產翻倍。")
-        elif final_fiq >= 85:
-            st.warning("🎖️ **獲得財商尊號：【🌱 隨波逐流的市場小散戶】**  \n👉 評語：稍微有點危險喔！你常常看到大漲就忍不住想追，看到大跌就想亂賣，這會讓你在不知不覺中交了好多手續費給券商。")
-        else:
-            st.error("🎖️ **獲得財商尊號：【🚨 散財童子 / 終極韭菜】**  \n👉 評語：完全是憑著感覺和情緒在盲目操作！頻繁追高殺低、把子彈一次打光、不給自己留退路。請重新多玩幾次，好好看導師的白話文建議！")
         
         if total_asset >= st.session_state.TARGET:
             st.balloons()
             st.success("🏆 恭喜你達成目標金額，成功通關！")
         else:
             st.error("📉 很可惜，你沒有達到目標金額。")
-            
-        if st.session_state.advisor.achievements:
-            st.warning("🏅 [ 你的榮耀勳章 (解鎖成就) ]")
-            for ach in st.session_state.advisor.achievements:
-                st.markdown(f"**- {ach}**")
                 
         st.divider()
         if st.button("🔄 重新開始遊戲", use_container_width=True):
@@ -269,9 +256,11 @@ with main_col_left:
                     
             # 處理薪水 (每四週一次)
             if week % 4 == 0:
-                salary = 30000
-                st.session_state.cash += salary
-                event_logs.append(f"💼 【發薪日】辛苦工作了一個月，獲得薪資 ${salary:,}！")
+                salary = 50000
+                living_cost = 40000
+                net = salary - living_cost
+                st.session_state.cash += net
+                event_logs.append(f"💼 【發薪日】薪資 ${salary:,} 已入帳，扣除生活費 ${living_cost:,}，實際淨入帳 ${net:,}")
                     
             # 更新狀態
             st.session_state.prev_price = current_price

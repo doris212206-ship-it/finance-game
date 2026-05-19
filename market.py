@@ -17,8 +17,8 @@ def load_stock_data():
     start_day = random.randint(1, 28) # 避免大小月報錯
     
     start_date = datetime(start_year, start_month, start_day)
-    # 抓取 1 年的資料，確保有足夠的交易日供遊戲使用
-    end_date = start_date + timedelta(days=365)
+    # 抓取 2 年的資料，確保 52 週有足夠的交易日
+    end_date = start_date + timedelta(days=730)
     
     start_str = start_date.strftime('%Y-%m-%d')
     end_str = end_date.strftime('%Y-%m-%d')
@@ -37,6 +37,17 @@ def load_stock_data():
     df.attrs['history_start'] = start_str
     df.attrs['history_end'] = end_str
     df.attrs['ticker'] = ticker
+    
+    # 抓取公司基本資訊（名稱、產業）
+    try:
+        info = yf.Ticker(ticker).info
+        df.attrs['company_name'] = info.get('longName', ticker)
+        df.attrs['sector'] = info.get('sector', '未知產業')
+        df.attrs['industry'] = info.get('industry', '未知細分產業')
+    except Exception:
+        df.attrs['company_name'] = ticker
+        df.attrs['sector'] = '未知'
+        df.attrs['industry'] = '未知'
 
     # ===== 防呆處理 =====
     df = df.dropna()

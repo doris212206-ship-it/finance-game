@@ -44,7 +44,7 @@ class FinancialAdvisor:
             self.consecutive_sell = 0
             
         self._out("\n" + "═"*45)
-        self._out(f"📚 【 財商導師 - 第 {week} 週盤後教室 】 (新手理財積分: {self.fiq_score} 分)")
+        self._out(f"📚 【 財商導師 - 第 {week} 週盤後教室 】")
         self._out("═"*45)
 
         # 1. 市場環境分析
