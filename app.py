@@ -88,50 +88,95 @@ else:
 # 側邊欄：投資儀表板
 # =====================
 with st.sidebar:
+    st.markdown("""
+    <style>
+    section[data-testid="stSidebar"] div.block-container {
+        padding-top: 0.5rem;
+        padding-bottom: 0rem;
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+    }
 
-    st.markdown("## 📈 儀表板")
+    div[data-testid="column"] {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("##### 📈 儀表板")
 
     # ===== 週數 =====
-    st.markdown("## 週數")
+    st.markdown("##### 週數")
     st.markdown(
-        f"<div style='font-size:24px; font-weight:bold;'>"
-        f"{display_week} / {st.session_state.MAX_WEEKS}</div>",
+        f"""
+        <div style="
+            font-size:26px;
+            font-weight:bold;
+            line-height:0.9;
+            margin-bottom:0px;
+            padding:0;
+        ">
+        {display_week} / {st.session_state.MAX_WEEKS}
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    st.markdown("---")
+    st.markdown("<div style='margin:1px 0;'></div>", unsafe_allow_html=True)
 
     # ===== 日期 =====
-    st.markdown("## 🗓️ 目前日期")
+    st.markdown("##### 🗓️ 目前日期")
     st.markdown(
-        f"<div style='font-size:20px; font-weight:bold;'>"
-        f"{current_date_str}</div>",
+        f"""
+        <div style="
+            font-size:20px;
+            font-weight:bold;
+            line-height:0.9;
+            margin-bottom:0px;
+            padding:0;
+        ">
+        {current_date_str}
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    st.markdown("---")
+    st.markdown("<div style='margin:1px 0;'></div>", unsafe_allow_html=True)
 
     # ===== 股價 =====
-    st.markdown("## 當前股價")
+    st.markdown("##### 當前股價")
     st.markdown(
-        f"<div style='font-size:24px; font-weight:bold;'>"
-        f"${current_price:.2f}</div>",
+        f"""
+        <div style="
+            font-size:26px;
+            font-weight:bold;
+            line-height:0.9;
+            margin-bottom:0px;
+            padding:0;
+        ">
+        ${current_price:.2f}
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    st.markdown("---")
+    st.markdown("<div style='margin:1px 0;'></div>", unsafe_allow_html=True)
 
     # ===== 現金與持股 =====
     col_cash, col_stock = st.columns(2)
 
     with col_cash:
-        st.markdown("## 現金 (Cash)")
+        st.markdown("##### 現金 (Cash)")
         st.markdown(
             f"""
             <div style="
                 font-size:18px;
                 font-weight:bold;
                 color:#188038;
+                line-height:0.9;
+                margin-bottom:0px;
+                padding:0;
             ">
             ${st.session_state.cash:,.0f}
             </div>
@@ -140,13 +185,16 @@ with st.sidebar:
         )
 
     with col_stock:
-        st.markdown("## 持股 (Stock)")
+        st.markdown("##### 持股 (Stock)")
         st.markdown(
             f"""
             <div style="
                 font-size:18px;
                 font-weight:bold;
                 color:#1967d2;
+                line-height:0.9;
+                margin-bottom:0px;
+                padding:0;
             ">
             {st.session_state.stock} 股
             </div>
@@ -154,10 +202,10 @@ with st.sidebar:
             unsafe_allow_html=True
         )
 
-    st.markdown("---")
+    st.markdown("<div style='margin:1px 0;'></div>", unsafe_allow_html=True)
 
     # ===== 未實現損益 =====
-    st.markdown("## 未實現損益")
+    st.markdown("##### 未實現損益")
 
     unrealized_color = "#188038" if unrealized >= 0 else "#d93025"
 
@@ -167,6 +215,9 @@ with st.sidebar:
             font-size:18px;
             font-weight:bold;
             color:{unrealized_color};
+            line-height:0.9;
+            margin-bottom:0px;
+            padding:0;
         ">
         ${unrealized:,.0f}
         </div>
@@ -180,17 +231,20 @@ with st.sidebar:
         delta=f"{unrealized:,.1f}"
     )
 
-    st.markdown("---")
+    st.markdown("<div style='margin:1px 0;'></div>", unsafe_allow_html=True)
 
     # ===== 總資產 =====
-    st.markdown("## 總資產")
+    st.markdown("##### 總資產")
 
     st.markdown(
         f"""
         <div style="
-            font-size:24px;
+            font-size:26px;
             font-weight:bold;
             color:#f9ab00;
+            line-height:0.9;
+            margin-bottom:0px;
+            padding:0;
         ">
         ${total_asset:,.0f}
         </div>
