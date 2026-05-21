@@ -85,31 +85,63 @@ else:
     chart_date_str = current_date_str
 
 # =====================
-# 側邊欄：投資儀表板 (縮小到1/4)
+# 側邊欄：投資儀表板 (超迷你尺寸)
 # =====================
 with st.sidebar:
-    st.header("📊 投資儀表板", divider=True)
+    st.markdown("#### 📊 儀表板", help="投資狀況快覽")
     
-    # 使用較小的 metric 尺寸
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("週數", f"{display_week}/{st.session_state.MAX_WEEKS}")
-    with col2:
-        st.metric("股價", f"${current_price:.2f}")
+    # 使用 markdown 和自訂 CSS 來做更小的字體
+    st.markdown(f"""
+    <style>
+    .small-metric {{ font-size: 12px; margin: 2px 0; }}
+    .small-value {{ font-size: 14px; font-weight: bold; }}
+    </style>
     
-    st.metric("📅 日期", current_date_str, label_visibility="collapsed")
+    <div class="small-metric">
+    <span>週: <span class="small-value">{display_week}/{st.session_state.MAX_WEEKS}</span></span>
+    </div>
+    <div class="small-metric">
+    <span>股價: <span class="small-value">${current_price:.2f}</span></span>
+    </div>
+    <div class="small-metric">
+    <span>日期: <span class="small-value">{current_date_str}</span></span>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.divider()
     
+    # 使用 2 列展示現金和持股
     col_cash, col_stock = st.columns(2)
-    col_cash.metric("現金", f"${st.session_state.cash:,.0f}", label_visibility="collapsed")
-    col_stock.metric("持股", f"{st.session_state.stock}股", label_visibility="collapsed")
+    with col_cash:
+        st.markdown(f"""
+        <div style="font-size: 11px;">
+        <b>現金</b><br>
+        <span style="font-size: 13px; color: #2ecc71;">${st.session_state.cash:,.0f}</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_stock:
+        st.markdown(f"""
+        <div style="font-size: 11px;">
+        <b>持股</b><br>
+        <span style="font-size: 13px; color: #3498db;">{st.session_state.stock} 股</span>
+        </div>
+        """, unsafe_allow_html=True)
     
-    unrealized_delta = float(unrealized) if unrealized != 0 else None
-    st.metric("未實現", f"${unrealized:,.0f}", delta=unrealized_delta, label_visibility="collapsed")
+    st.markdown(f"""
+    <div style="font-size: 11px; margin-top: 4px;">
+    <b>未實現</b> 
+    <span style="font-size: 12px; color: {'#e74c3c' if unrealized < 0 else '#2ecc71'};">${unrealized:,.0f}</span>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.divider()
-    st.metric("總資產", f"${total_asset:,.0f}", delta=float(total_asset - 500000), label_visibility="collapsed")
+    
+    st.markdown(f"""
+    <div style="font-size: 11px;">
+    <b>總資產</b><br>
+    <span style="font-size: 14px; font-weight: bold; color: #f39c12;">${total_asset:,.0f}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
 # =====================
 # 標題與規則
