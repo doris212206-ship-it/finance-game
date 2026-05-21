@@ -92,9 +92,9 @@ with st.sidebar:
     st.markdown("## 📈 儀表板")
 
     # ===== 週數 =====
-    st.markdown("週數")
+    st.markdown("## 週數")
     st.markdown(
-        f"<div style='font-size:14px; font-weight:bold;'>"
+        f"<div style='font-size:24px; font-weight:bold;'>"
         f"{display_week} / {st.session_state.MAX_WEEKS}</div>",
         unsafe_allow_html=True
     )
@@ -102,9 +102,9 @@ with st.sidebar:
     st.markdown("---")
 
     # ===== 日期 =====
-    st.markdown("🗓️ 目前日期")
+    st.markdown("## 🗓️ 目前日期")
     st.markdown(
-        f"<div style='font-size:13px; font-weight:bold;'>"
+        f"<div style='font-size:20px; font-weight:bold;'>"
         f"{current_date_str}</div>",
         unsafe_allow_html=True
     )
@@ -112,9 +112,9 @@ with st.sidebar:
     st.markdown("---")
 
     # ===== 股價 =====
-    st.markdown("當前股價")
+    st.markdown("## 當前股價")
     st.markdown(
-        f"<div style='font-size:14px; font-weight:bold;'>"
+        f"<div style='font-size:24px; font-weight:bold;'>"
         f"${current_price:.2f}</div>",
         unsafe_allow_html=True
     )
@@ -125,11 +125,11 @@ with st.sidebar:
     col_cash, col_stock = st.columns(2)
 
     with col_cash:
-        st.markdown("現金 (Cash)")
+        st.markdown("## 現金 (Cash)")
         st.markdown(
             f"""
             <div style="
-                font-size:11px;
+                font-size:18px;
                 font-weight:bold;
                 color:#188038;
             ">
@@ -140,11 +140,11 @@ with st.sidebar:
         )
 
     with col_stock:
-        st.markdown("持股 (Stock)")
+        st.markdown("## 持股 (Stock)")
         st.markdown(
             f"""
             <div style="
-                font-size:11px;
+                font-size:18px;
                 font-weight:bold;
                 color:#1967d2;
             ">
@@ -157,14 +157,14 @@ with st.sidebar:
     st.markdown("---")
 
     # ===== 未實現損益 =====
-    st.markdown("未實現損益")
+    st.markdown("## 未實現損益")
 
     unrealized_color = "#188038" if unrealized >= 0 else "#d93025"
 
     st.markdown(
         f"""
         <div style="
-            font-size:11px;
+            font-size:18px;
             font-weight:bold;
             color:{unrealized_color};
         ">
@@ -183,12 +183,12 @@ with st.sidebar:
     st.markdown("---")
 
     # ===== 總資產 =====
-    st.markdown("總資產")
+    st.markdown("## 總資產")
 
     st.markdown(
         f"""
         <div style="
-            font-size:14px;
+            font-size:24px;
             font-weight:bold;
             color:#f9ab00;
         ">
