@@ -25,13 +25,21 @@ def load_stock_data():
 
     print("⏳ 正在搭乘時光機，前往隨機的歷史市場區間...")
 
-    df = yf.download(
-        ticker,
-        start=start_str,
-        end=end_str,
-        interval="1d",
-        progress=False # 隱藏下載進度條，增加神秘感
-    )
+    try:
+        df = yf.download(
+            ticker,
+            start=start_str,
+            end=end_str,
+            interval="1d",
+            auto_adjust=False,
+            progress=False, # 隱藏下載進度條，增加神秘感
+            threads=False
+        )
+    except Exception as exc:
+        raise RuntimeError("無法下載股票資料，請確認網路連線後再重新整理頁面。") from exc
+
+    if df.empty:
+        raise RuntimeError("這次沒有抓到股票資料，請重新整理頁面再試一次。")
 
     # 將隨機區間記錄在 df.attrs 中，方便後續在結算畫面揭曉
     df.attrs['history_start'] = start_str
