@@ -88,31 +88,121 @@ else:
 # 側邊欄：投資儀表板
 # =====================
 with st.sidebar:
+
     st.markdown("## 📈 儀表板")
 
-    # 週數 / 日期 / 股價：使用 Streamlit 預設 metric 樣式，不額外調整字體大小
-    st.metric("週數", f"{display_week} / {st.session_state.MAX_WEEKS}")
-    st.metric("🗓️ 目前日期", current_date_str)
-    st.metric("當前股價", f"${current_price:.2f}")
+    # ===== 週數 =====
+    st.markdown("週數")
+    st.markdown(
+        f"<div style='font-size:14px; font-weight:bold;'>"
+        f"{display_week} / {st.session_state.MAX_WEEKS}</div>",
+        unsafe_allow_html=True
+    )
 
-    st.divider()
+    st.markdown("---")
 
-    # 現金與持股左右並排
+    # ===== 日期 =====
+    st.markdown("🗓️ 目前日期")
+    st.markdown(
+        f"<div style='font-size:13px; font-weight:bold;'>"
+        f"{current_date_str}</div>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown("---")
+
+    # ===== 股價 =====
+    st.markdown("當前股價")
+    st.markdown(
+        f"<div style='font-size:14px; font-weight:bold;'>"
+        f"${current_price:.2f}</div>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown("---")
+
+    # ===== 現金與持股 =====
     col_cash, col_stock = st.columns(2)
+
     with col_cash:
-        st.metric("現金 (Cash)", f"${st.session_state.cash:,.0f}")
+        st.markdown("現金 (Cash)")
+        st.markdown(
+            f"""
+            <div style="
+                font-size:11px;
+                font-weight:bold;
+                color:#188038;
+            ">
+            ${st.session_state.cash:,.0f}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
     with col_stock:
-        st.metric("持股 (Stock)", f"{st.session_state.stock} 股")
+        st.markdown("持股 (Stock)")
+        st.markdown(
+            f"""
+            <div style="
+                font-size:11px;
+                font-weight:bold;
+                color:#1967d2;
+            ">
+            {st.session_state.stock} 股
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    st.divider()
+    st.markdown("---")
 
-    # 未實現損益
-    st.metric("未實現損益", f"${unrealized:,.0f}", delta=f"{unrealized:,.1f}")
+    # ===== 未實現損益 =====
+    st.markdown("未實現損益")
 
-    st.divider()
+    unrealized_color = "#188038" if unrealized >= 0 else "#d93025"
 
-    # 總資產
-    st.metric("總資產", f"${total_asset:,.0f}", delta=f"{total_asset - 500000:,.10f}")
+    st.markdown(
+        f"""
+        <div style="
+            font-size:11px;
+            font-weight:bold;
+            color:{unrealized_color};
+        ">
+        ${unrealized:,.0f}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.metric(
+        label="",
+        value="",
+        delta=f"{unrealized:,.1f}"
+    )
+
+    st.markdown("---")
+
+    # ===== 總資產 =====
+    st.markdown("總資產")
+
+    st.markdown(
+        f"""
+        <div style="
+            font-size:14px;
+            font-weight:bold;
+            color:#f9ab00;
+        ">
+        ${total_asset:,.0f}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.metric(
+        label="",
+        value="",
+        delta=f"{total_asset - 500000:,.2f}"
+    )
 
 # =====================
 # 標題與規則
