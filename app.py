@@ -85,16 +85,23 @@ else:
     chart_date_str = current_date_str
 
 # =====================
-# 側邊欄：投資儀表板 (超迷你尺寸)
+# 側邊欄：投資儀表板 (字體放大版)
 # =====================
 with st.sidebar:
     st.markdown("#### 📊 儀表板", help="投資狀況快覽")
     
-    # 使用 markdown 和自訂 CSS 來做更小的字體
+    # 使用 markdown 和自訂 CSS 放大儀表板字體
     st.markdown(f"""
     <style>
-    .small-metric {{ font-size: 12px; margin: 2px 0; }}
-    .small-value {{ font-size: 14px; font-weight: bold; }}
+    .small-metric {{
+        font-size: 18px;
+        margin: 8px 0;
+        line-height: 1.6;
+    }}
+    .small-value {{
+        font-size: 22px;
+        font-weight: bold;
+    }}
     </style>
     
     <div class="small-metric">
@@ -114,32 +121,32 @@ with st.sidebar:
     col_cash, col_stock = st.columns(2)
     with col_cash:
         st.markdown(f"""
-        <div style="font-size: 11px;">
+        <div style="font-size: 16px;">
         <b>現金</b><br>
-        <span style="font-size: 13px; color: #2ecc71;">${st.session_state.cash:,.0f}</span>
+        <span style="font-size: 20px; color: #2ecc71;">${st.session_state.cash:,.0f}</span>
         </div>
         """, unsafe_allow_html=True)
     with col_stock:
         st.markdown(f"""
-        <div style="font-size: 11px;">
+        <div style="font-size: 16px;">
         <b>持股</b><br>
-        <span style="font-size: 13px; color: #3498db;">{st.session_state.stock} 股</span>
+        <span style="font-size: 20px; color: #3498db;">{st.session_state.stock} 股</span>
         </div>
         """, unsafe_allow_html=True)
     
     st.markdown(f"""
-    <div style="font-size: 11px; margin-top: 4px;">
+    <div style="font-size: 16px; margin-top: 8px;">
     <b>未實現</b> 
-    <span style="font-size: 12px; color: {'#e74c3c' if unrealized < 0 else '#2ecc71'};">${unrealized:,.0f}</span>
+    <span style="font-size: 18px; color: {'#e74c3c' if unrealized < 0 else '#2ecc71'};">${unrealized:,.0f}</span>
     </div>
     """, unsafe_allow_html=True)
     
     st.divider()
     
     st.markdown(f"""
-    <div style="font-size: 11px;">
+    <div style="font-size: 16px;">
     <b>總資產</b><br>
-    <span style="font-size: 14px; font-weight: bold; color: #f39c12;">${total_asset:,.0f}</span>
+    <span style="font-size: 24px; font-weight: bold; color: #f39c12;">${total_asset:,.0f}</span>
     </div>
     """, unsafe_allow_html=True)
 
