@@ -85,70 +85,34 @@ else:
     chart_date_str = current_date_str
 
 # =====================
-# 側邊欄：投資儀表板 (字體放大版)
+# 側邊欄：投資儀表板
 # =====================
 with st.sidebar:
-    st.markdown("#### 📊 儀表板", help="投資狀況快覽")
-    
-    # 使用 markdown 和自訂 CSS 放大儀表板字體
-    st.markdown(f"""
-    <style>
-    .small-metric {{
-        font-size: 18px;
-        margin: 8px 0;
-        line-height: 1.6;
-    }}
-    .small-value {{
-        font-size: 22px;
-        font-weight: bold;
-    }}
-    </style>
-    
-    <div class="small-metric">
-    <span>週: <span class="small-value">{display_week}/{st.session_state.MAX_WEEKS}</span></span>
-    </div>
-    <div class="small-metric">
-    <span>股價: <span class="small-value">${current_price:.2f}</span></span>
-    </div>
-    <div class="small-metric">
-    <span>日期: <span class="small-value">{current_date_str}</span></span>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    st.markdown("## 📈 儀表板")
+
+    # 週數 / 日期 / 股價：使用 Streamlit 預設 metric 樣式，不額外調整字體大小
+    st.metric("週數", f"{display_week} / {st.session_state.MAX_WEEKS}")
+    st.metric("🗓️ 目前日期", current_date_str)
+    st.metric("當前股價", f"${current_price:.2f}")
+
     st.divider()
-    
-    # 使用 2 列展示現金和持股
+
+    # 現金與持股左右並排
     col_cash, col_stock = st.columns(2)
     with col_cash:
-        st.markdown(f"""
-        <div style="font-size: 16px;">
-        <b>現金</b><br>
-        <span style="font-size: 20px; color: #2ecc71;">${st.session_state.cash:,.0f}</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("現金 (Cash)", f"${st.session_state.cash:,.0f}")
     with col_stock:
-        st.markdown(f"""
-        <div style="font-size: 16px;">
-        <b>持股</b><br>
-        <span style="font-size: 20px; color: #3498db;">{st.session_state.stock} 股</span>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown(f"""
-    <div style="font-size: 16px; margin-top: 8px;">
-    <b>未實現</b> 
-    <span style="font-size: 18px; color: {'#e74c3c' if unrealized < 0 else '#2ecc71'};">${unrealized:,.0f}</span>
-    </div>
-    """, unsafe_allow_html=True)
-    
+        st.metric("持股 (Stock)", f"{st.session_state.stock} 股")
+
     st.divider()
-    
-    st.markdown(f"""
-    <div style="font-size: 16px;">
-    <b>總資產</b><br>
-    <span style="font-size: 24px; font-weight: bold; color: #f39c12;">${total_asset:,.0f}</span>
-    </div>
-    """, unsafe_allow_html=True)
+
+    # 未實現損益
+    st.metric("未實現損益", f"${unrealized:,.0f}", delta=f"{unrealized:,.1f}")
+
+    st.divider()
+
+    # 總資產
+    st.metric("總資產", f"${total_asset:,.0f}", delta=f"{total_asset - 500000:,.10f}")
 
 # =====================
 # 標題與規則
