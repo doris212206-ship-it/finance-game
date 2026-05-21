@@ -56,56 +56,63 @@ if "initialized" not in st.session_state:
         st.session_state.game_start_date = datetime.strptime(str(start_date_obj)[:10], "%Y-%m-%d").date()
 
 # =====================
-# 側邊欄：投資儀表板
+# 準備數據 (在側邊欄外)
 # =====================
-with st.sidebar:
-    st.header("📊 投資儀表板")
+df = st.session_state.df
+week = st.session_state.week
+
+# 確保結算時圖表停留在最後一天
+display_week = min(week, st.session_state.MAX_WEEKS)
+day_index = st.session_state.START_OFFSET + display_week * 5
+day_index = min(day_index, len(df) - 1)
+
+if (st.session_state.START_OFFSET + week * 5) >= len(df) or week > st.session_state.MAX_WEEKS:
+    st.session_state.game_over = True
     
-    # 準備資料
-    df = st.session_state.df
-    week = st.session_state.week
+day_close = df["Close"].iloc[day_index]
+current_price = float(day_close.iloc[0] if hasattr(day_close, "iloc") else day_close)
     
-    # 確保結算時圖表停留在最後一天
-    display_week = min(week, st.session_state.MAX_WEEKS)
-    day_index = st.session_state.START_OFFSET + display_week * 5
-    day_index = min(day_index, len(df) - 1)
-    
-    if (st.session_state.START_OFFSET + week * 5) >= len(df) or week > st.session_state.MAX_WEEKS:
-        st.session_state.game_over = True
-        
-    day_close = df["Close"].iloc[day_index]
-    current_price = float(day_close.iloc[0] if hasattr(day_close, "iloc") else day_close)
-        
-    total_asset = st.session_state.cash + st.session_state.stock * current_price
-    unrealized = (current_price - st.session_state.avg_price) * st.session_state.stock if st.session_state.stock > 0 else 0
-    
-    # 取得目前這週對應的真實日期
-    current_date = df["Date"].iloc[day_index]
-    if hasattr(current_date, 'strftime'):
-        current_date_str = current_date.strftime("%Y年%m月%d日")
-        chart_date_str = current_date.strftime("%Y-%m-%d")
-    else:
-        current_date_str = str(current_date)[:10]
-        chart_date_str = current_date_str
-    
-    st.metric("週數", f"{display_week} / {st.session_state.MAX_WEEKS}")
-    st.metric("📅 目前日期", current_date_str)
-    st.metric("當前股價", f"${current_price:.2f}")
-    
-    st.divider()
-    
-    col1, col2 = st.columns(2)
-    col1.metric("現金 (Cash)", f"${st.session_state.cash:,.0f}")
-    col2.metric("持股 (Stock)", f"{st.session_state.stock} 股")
-    
-    st.metric("未實現損益", f"${unrealized:,.0f}", delta=float(unrealized))
-    
-    st.divider()
-    
-    st.metric("總資產", f"${total_asset:,.0f}", delta=float(total_asset - 500000))
+total_asset = st.session_state.cash + st.session_state.stock * current_price
+unrealized = (current_price - st.session_state.avg_price) * st.session_state.stock if st.session_state.stock > 0 else 0
+
+# 取得目前這週對應的真實日期
+current_date = df["Date"].iloc[day_index]
+if hasattr(current_date, 'strftime'):
+    current_date_str = current_date.strftime("%Y年%m月%d日")
+    chart_date_str = current_date.strftime("%Y-%m-%d")
+else:
+    current_date_str = str(current_date)[:10]
+    chart_date_str = current_date_str
 
 # =====================
-# 遊戲主畫面
+# 側邊欄：投資儀表板 (縮小到1/4)
+# =====================
+with st.sidebar:
+    st.header("📊 投資儀表板", divider=True)
+    
+    # 使用較小的 metric 尺寸
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("週數", f"{display_week}/{st.session_state.MAX_WEEKS}")
+    with col2:
+        st.metric("股價", f"${current_price:.2f}")
+    
+    st.metric("📅 日期", current_date_str, label_visibility="collapsed")
+    
+    st.divider()
+    
+    col_cash, col_stock = st.columns(2)
+    col_cash.metric("現金", f"${st.session_state.cash:,.0f}", label_visibility="collapsed")
+    col_stock.metric("持股", f"{st.session_state.stock}股", label_visibility="collapsed")
+    
+    unrealized_delta = float(unrealized) if unrealized != 0 else None
+    st.metric("未實現", f"${unrealized:,.0f}", delta=unrealized_delta, label_visibility="collapsed")
+    
+    st.divider()
+    st.metric("總資產", f"${total_asset:,.0f}", delta=float(total_asset - 500000), label_visibility="collapsed")
+
+# =====================
+# 標題與規則
 # =====================
 st.title("📈 華爾街見習生：投資模擬遊戲")
 
@@ -140,18 +147,18 @@ with st.expander("📖 遊戲規則與背景 (點擊展開/收起)", expanded=(s
     """)
 
 # =====================
-# 雙欄式排版設計
+# 主遊戲區：圖表 + 紀錄 (側並排)
 # =====================
-main_col_left, main_col_right = st.columns([2, 1], gap="large")
+game_col_left, game_col_right = st.columns([1.5, 1.5], gap="medium")
 
-with main_col_left:
+with game_col_left:
     # =====================
-    # 畫圖 (永遠顯示)
+    # 股價圖表 (調小)
     # =====================
     history_close = df["Close"].iloc[0:day_index + 1]
     history_ma10 = df["Close"].rolling(window=10).mean().iloc[0:day_index + 1]
     
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(8, 4))  # 從 (10, 5) 調小到 (8, 4)
     ax.plot(history_close.index, history_close.values, label="Stock Price", color="#2c3e50", linewidth=2) 
     ax.fill_between(history_close.index, history_close.values, color="#3498db", alpha=0.1)
     ax.plot(history_ma10.index, history_ma10.values, label="10-Day MA", color="#e74c3c", linestyle="--", alpha=0.8)
@@ -183,11 +190,12 @@ with main_col_left:
         y_max = max(y_max, st.session_state.avg_price * 1.02)
         
     ax.set_ylim(y_min, y_max)
-    ax.set_title(f"Market View - {chart_date_str}  (Week {display_week} / {st.session_state.MAX_WEEKS})", fontsize=13, fontweight="bold")
+    ax.set_title(f"Market View - {chart_date_str}  (Week {display_week} / {st.session_state.MAX_WEEKS})", fontsize=12, fontweight="bold")
     ax.grid(True, linestyle="--", alpha=0.4)
     ax.legend(loc='upper left', fontsize='small')
+    plt.tight_layout()
     
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
     # =====================
     # 操作區與結算區
@@ -197,7 +205,6 @@ with main_col_left:
         st.subheader(f"💰 最終總資產：\${total_asset:,.2f} (目標: \${st.session_state.TARGET:,.0f})")
         
         # 計算純投資損益
-        # 公式：最終資產 - 起始資金 - 累計薪水淨收入 - 累計事件淨收入
         START_CAPITAL = 500000
         invest_gain = total_asset - START_CAPITAL - st.session_state.total_salary_net - st.session_state.total_event_net
         
@@ -280,7 +287,7 @@ with main_col_left:
             st.session_state.trade_prices_y.append(current_price)
             st.session_state.trade_actions_color.append(current_color)
             
-            # 計算下一週的價格 (即將揭曉的結果)
+            # 計算下一週的價格
             next_week = st.session_state.week + 1
             next_display_week = min(next_week, st.session_state.MAX_WEEKS)
             next_day_index = st.session_state.START_OFFSET + next_display_week * 5
@@ -297,7 +304,6 @@ with main_col_left:
             )
             
             # ===== 歷史新聞判定 =====
-            # 取得本週的真實日期
             current_date_obj = df["Date"].iloc[day_index]
             if hasattr(current_date_obj, 'date'):
                 current_date_val = current_date_obj.date()
@@ -308,16 +314,15 @@ with main_col_left:
             for i, news in enumerate(historical_news):
                 if i not in st.session_state.shown_news:
                     news_date = datetime.strptime(news["date"], "%Y-%m-%d").date()
-                    # 如果新聞發生在遊戲開始之後，且剛好在今天或之前，就觸發
                     if st.session_state.game_start_date <= news_date <= current_date_val:
                         news_logs.append(f"📰 【歷史新聞快訊】 {news['date']} - {news['text']}")
                         st.session_state.shown_news.add(i)
             
-            # 處理隨機事件 (每週一次)
+            # 處理隨機事件
             event_logs = []
             event = draw_event()
             st.session_state.cash += event["amount"]
-            st.session_state.total_event_net += event["amount"]  # 追蹤累計
+            st.session_state.total_event_net += event["amount"]
             if event["amount"] != 0:
                 event_logs.append(f"📌 【隨機事件】：{event['name']}")
                 if event["amount"] > 0:
@@ -325,20 +330,19 @@ with main_col_left:
                 elif event["amount"] < 0:
                     event_logs.append(f"⚠️ 損失 \${abs(event['amount'])}")
                     
-            # 處理薪水 (每四週一次)
+            # 處理薪水
             if week % 4 == 0:
                 salary = 50000
                 living_cost = 40000
                 net = salary - living_cost
                 st.session_state.cash += net
-                st.session_state.total_salary_net += net  # 追蹤累計
+                st.session_state.total_salary_net += net
                 event_logs.append(f"💼 【發薪日】薪資 \${salary:,} 已入帳，扣除生活費 \${living_cost:,}，實際淨入帳 \${net:,}")
             
-            # ===== 現金不足時強制賣股 =====
+            # 現金不足時強制賣股
             if st.session_state.cash < 0 and st.session_state.stock > 0:
                 deficit = abs(st.session_state.cash)
-                # 計算需要賣多少股才能補回（含交易稅手續費）
-                fee_rate = 0.001425 + 0.003  # 買手續費 + 交易稅
+                fee_rate = 0.001425 + 0.003
                 shares_needed = int(deficit / (current_price * (1 - fee_rate))) + 1
                 shares_to_sell = min(shares_needed, st.session_state.stock)
                 
@@ -364,7 +368,6 @@ with main_col_left:
             st.session_state.logs = week_separator + news_logs + action_log + event_logs + advisor_logs + st.session_state.logs
     
         # UI 配置
-        st.container()
         col_b, col_s, col_n = st.columns(3)
         
         with col_b:
@@ -377,17 +380,17 @@ with main_col_left:
             st.button("🔵 賣出 (Sell)", on_click=handle_action, args=("s",), use_container_width=True)
             
         with col_n:
-            st.markdown("<br><br>", unsafe_allow_html=True) # 用空行對齊前面的 input
+            st.markdown("<br><br>", unsafe_allow_html=True)
             st.button("🔴 觀望 (Hold)", on_click=handle_action, args=("n",), use_container_width=True)
 
-with main_col_right:
+with game_col_right:
     # =====================
-    # 對話與紀錄區 (永遠顯示)
+    # 對話與紀錄區 (放大至1/2)
     # =====================
     st.subheader("📝 遊戲紀錄與回饋")
     
-    # 使用固定高度的 container 產生獨立捲軸
-    with st.container(height=650, border=True):
+    # 使用更大的高度讓用戶減少滑動
+    with st.container(height=900, border=True):
         for log in st.session_state.logs:
             if log.startswith("📅"):
                 st.markdown(f"#### {log}")
@@ -398,6 +401,6 @@ with main_col_right:
             elif log.startswith("🌟"):
                 st.warning(log)
             elif "═" in log:
-                pass # 忽略分隔線
+                pass
             else:
                 st.info(log)
