@@ -36,7 +36,7 @@ if "initialized" not in st.session_state:
 initial_close = st.session_state.df["Close"].iloc[st.session_state.START_OFFSET]
 st.session_state.prev_price = float(initial_close.iloc[0] if hasattr(initial_close, "iloc") else initial_close)
     # 若起始偏移超出資料長度，調整為最後一筆資料的索引
-    st.session_state.START_OFFSET = max(0, len(st.session_state.df) - 1)
+st.session_state.START_OFFSET = max(0, len(st.session_state.df) - 1)
         st.session_state.START_OFFSET = max(0, len(st.session_state.df) - 1)
         st.warning(f"START_OFFSET 超出資料長度，已自動調整為 {st.session_state.START_OFFSET}")
     
