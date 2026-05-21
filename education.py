@@ -2,15 +2,14 @@ import random
 
 class FinancialAdvisor:
     def __init__(self):
-        self.fiq_score = 100
         self.consecutive_buy = 0
         self.consecutive_sell = 0
         self.current_week = 0
         
         # 狀態追蹤
-        self.last_action = None       # "b", "s", "n"
+        self.last_action = None
         self.last_price = 0
-        self.achievements = set()     # 用 set 避免重複獲得
+        self.achievements = set()
         
         self.ui_mode = False
         self.logs = []
@@ -20,7 +19,7 @@ class FinancialAdvisor:
         if not self.ui_mode:
             print(msg)
             
-    def evaluate(self, action, current_price, prev_price, avg_price, ma10_price, cash, total_asset, stock, ui_mode=False):
+    def evaluate(self, action, current_price, next_price, prev_price, avg_price, ma10_price, cash, total_asset, stock, ui_mode=False):
         self.ui_mode = ui_mode
         self.logs = []
         
@@ -30,7 +29,8 @@ class FinancialAdvisor:
         if prev_price == 0:
             prev_price = current_price
             
-        change_percent = ((current_price - prev_price) / prev_price) * 100
+        context_change = ((current_price - prev_price) / prev_price) * 100 if prev_price != 0 else 0
+        outcome_change = ((next_price - current_price) / current_price) * 100 if current_price != 0 else 0
         
         # 紀錄連續操作狀態
         if action == "b":
@@ -47,25 +47,25 @@ class FinancialAdvisor:
         self._out(f"📚 【 財商導師 - 第 {week} 週盤後教室 】")
         self._out("═"*45)
 
-        # 1. 市場環境分析
-        self._analyze_market(change_percent)
+        # 1. 玩家行為診斷
+        self._diagnose_action(action, current_price, prev_price, avg_price, ma10_price, context_change)
         
-        # 2. 因果回饋 (Cause & Effect)
-        self._cause_and_effect(current_price, change_percent)
+        # 2. 市場環境分析（下週結果）
+        self._analyze_market(outcome_change)
         
-        # 3. 玩家行為診斷 (加入成本與均線邏輯)
-        self._diagnose_action(action, current_price, prev_price, avg_price, ma10_price, change_percent)
+        # 3. 決策結果揭曉
+        self._cause_and_effect(action, outcome_change)
         
-        # 4. 錢包安全診斷
+        # 4. 資金控管診斷
         self._check_wallet(cash, total_asset)
         
         # 5. 徽章成就檢查
-        self._check_achievements(action, current_price, avg_price, change_percent, stock)
+        self._check_achievements(action, current_price, avg_price, context_change, outcome_change, stock)
         
         # 6. 今日財商進階課
         self._daily_lesson(week)
         
-        # 更新上一週的紀錄
+        # 更新紀錄
         self.last_action = action
         self.last_price = current_price
         
@@ -91,128 +91,133 @@ class FinancialAdvisor:
             ]
             self._out(random.choice(msgs))
             
-    def _cause_and_effect(self, current_price, change_percent):
-        if self.last_action is None:
+    def _cause_and_effect(self, action, outcome_change):
+        if action in ["n", None]:
             return
             
-        self._out("\n🔄 [ 跨週回顧：上週的決定對了嗎？ ]")
-        if self.last_action == "b":
-            if change_percent < -3:
-                self._out("💥 導師碎碎念：你上週才剛買進，結果這週就迎來大跌！如果上週是追高，這就是 FOMO 嚐到的苦果啊！")
-                self.fiq_score -= 2
-            elif change_percent > 3:
-                self._out("✨ 導師稱讚：你上週大膽買進，這週立刻享受大漲的獲利，眼光精準！")
-                self.fiq_score += 2
+        self._out("\n🔄 [ 決策結果揭曉 ]")
+        if action == "b":
+            if outcome_change < -3:
+                self._out("💥 市場無情：你剛買進，市場立刻大跌。別灰心，短期的漲跌本來就是隨機的，重點是你有沒有設定好停損點！")
+            elif outcome_change > 3:
+                self._out("✨ 市場給糖：運氣不錯！剛買進就遇到大漲。但請記住，這只是帳面數字，還沒賣掉前都不算真正賺錢。")
             else:
-                self._out("⚖️ 導師碎碎念：上週買進後，目前市場還沒表態，繼續耐心等待吧。")
-        elif self.last_action == "s":
-            if change_percent < -3:
-                self._out("🛡️ 導師稱讚：太神啦！你上週剛賣掉，這週就暴跌。這波『完美閃避』幫你省下了一大筆錢！")
-                self.fiq_score += 3
-            elif change_percent > 3:
-                self._out("😅 導師碎碎念：上週才賣，結果這週大漲，是不是覺得有點可惜（俗稱賣飛）？但記住，賺進口袋的才是錢，不要太在意沒賺到的！")
+                self._out("⚖️ 市場觀望：買進後目前股價沒有太大波動，耐心等待趨勢發動吧。")
+        elif action == "s":
+            if outcome_change < -3:
+                self._out("🛡️ 完美閃避：太神啦！你剛賣掉，市場就暴跌。這波操作成功幫你避開了巨大的風險！")
+            elif outcome_change > 3:
+                self._out("😅 賣飛體驗：剛賣掉結果市場繼續大漲，心裡一定很嘔吧？但記住，『少賺總比大賠好』，紀律永遠擺第一！")
             else:
-                self._out("⚖️ 導師碎碎念：上週賣出後市場平靜，是不錯的防守策略。")
+                self._out("⚖️ 防守成功：賣出後市場平靜，是不錯的現金防守策略。")
                 
     def _diagnose_action(self, action, current_price, prev_price, avg_price, ma10_price, change_percent):
         self._out("\n🎯 [ 本週操作行為診斷 ]")
-        fiq_change = 0
+        
+        # 計算乖離率 (Bias)
+        bias_percent = ((current_price - ma10_price) / ma10_price) * 100 if ma10_price > 0 else 0
         
         if action == "b":
             self._out(f"🛒 你的行動：買入股票 (已連續買入 {self.consecutive_buy} 週)")
             
-            # 使用均線與平均成本來判斷
-            if current_price > ma10_price * 1.05:
-                # 乖離過大還買
+            if bias_percent > 10:
                 self._out("⚠️ 專業術語：【嚴重追高 / FOMO】")
-                self._out("💡 大白話：現在股價已經遠高於近期 10 天的平均價，你還衝進去買！這就像去熱門餐廳排隊買黃牛票，非常危險！")
-                fiq_change -= 2
+                self._out(f"💡 大白話：目前股價已經偏離 10 日均線高達 {bias_percent:.1f}%！在這個位階還衝進去買，面臨的回檔風險極大，這是不理性的『錯失恐懼症』！")
+            elif avg_price > 0 and current_price < avg_price * 0.8:
+                self._out("🚨 專業術語：【凹單攤平 / 沉沒成本謬誤】")
+                self._out("💡 大白話：你的帳面虧損已經超過 20%，你不僅沒有停損，反而還繼續加碼！這在專業交易中是絕對的大忌。")
             elif avg_price > 0 and current_price < avg_price:
-                # 真正意義上的攤平
-                self._out("💡 專業術語：【逢低攤平 (Averaging Down)】")
-                self._out("💡 大白話：股價低於你的平均成本，你選擇趁打折多買一點來拉低整體成本。只要公司不會倒，這是戰勝恐懼的好策略！")
-                fiq_change += 2
-            elif current_price > prev_price:
-                self._out("⚠️ 專業術語：【右側交易 / 動能追價】")
-                self._out("💡 大白話：看到股價漲就跟著買。順勢交易是OK的，但要注意有沒有買在最高點的風險。")
-                fiq_change -= 1
+                self._out("💡 專業術語：【逢低攤平】")
+                self._out("💡 大白話：在小幅虧損時選擇買進降低成本。只要確定趨勢還在，這是合理的策略。")
+            elif bias_percent > 0 and bias_percent <= 10:
+                self._out("✅ 專業術語：【順勢交易 / 動能買進】")
+                self._out("💡 大白話：股價在均線之上且乖離率合理，你選擇順著趨勢買進，是非常標準的右側交易策略！")
             else:
                 self._out("✅ 專業術語：【逢低佈局】")
-                self._out("💡 大白話：趁著這週沒怎麼漲，穩穩地佈局買進，有耐心！")
-                fiq_change += 1
+                self._out("💡 大白話：在股價貼近或低於均線時買進，風險較低，是不錯的左側佈局。")
                 
         elif action == "s":
             self._out(f"💰 你的行動：賣出股票 (已連續賣出 {self.consecutive_sell} 週)")
             
-            if avg_price > 0 and current_price > avg_price:
-                if self.consecutive_sell >= 2:
-                    self._out("✅ 專業術語：【分批停利 / 階梯式獲利】")
-                    self._out("💡 大白話：股票賺錢了，你選擇分批慢慢賣。這能讓你既保住獲利，又能享受如果繼續漲的紅利，非常成熟！")
-                    fiq_change += 3
+            if avg_price > 0 and current_price < avg_price:
+                loss_percent = ((current_price - avg_price) / avg_price) * 100
+                if loss_percent <= -10:
+                    self._out("🏆 專業術語：【嚴格執行停損】")
+                    self._out(f"💡 大白話：面對高達 {abs(loss_percent):.1f}% 的虧損，你沒有選擇凹單，而是果斷砍倉。能克服人性弱點執行停損，你已經具備職業操盤手的素質了！")
                 else:
-                    self._out("✅ 專業術語：【獲利了結 / 停利】")
-                    self._out("💡 大白話：恭喜賺錢！把螢幕上的數字變成口袋裡的真鈔，落袋為安永遠是對的。")
-                    fiq_change += 2
-            elif avg_price > 0 and current_price < avg_price:
-                self._out("⚠️ 專業術語：【執行停損 / 割肉】")
-                self._out("💡 大白話：雖然這筆交易賠錢了，但及時認錯賣出，可以防止虧損繼續擴大。『留得青山在，不怕沒柴燒』。")
-                fiq_change += 1
+                    self._out("✅ 專業術語：【風險控制 / 小損出場】")
+                    self._out("💡 大白話：發現苗頭不對立刻小賠出場，保住本金永遠是第一要務。")
+            elif avg_price > 0 and current_price > avg_price:
+                if self.consecutive_sell >= 2:
+                    self._out("✅ 專業術語：【分批停利】")
+                    self._out("💡 大白話：不一次賣光，而是分批賣出。這樣既能鎖住獲利，又能保留剩餘部位參與未來的上漲。")
+                else:
+                    self._out("✅ 專業術語：【獲利了結】")
+                    self._out("💡 大白話：恭喜賺錢！把螢幕上的數字變成實實在在的現金，落袋為安永遠不嫌少。")
             else:
-                self._out("⚠️ 專業術語：【清倉】")
-                self._out("💡 大白話：將手中的持股賣出換回現金。")
+                self._out("⚠️ 專業術語：【清倉退出】")
+                self._out("💡 大白話：將手中籌碼全數換回現金。")
                 
         elif action == "n":
-            self._out("⏳ 你的行動：不買也不賣（空倉/抱牢觀望）")
-            if abs(change_percent) > 5:
-                self._out("📘 專業術語：【以靜制動 / 抱緊處理】")
-                self._out("💡 大白話：市場波動劇烈，但你選擇不亂動。減少無謂的交易摩擦，也是一種實力的展現。")
-                fiq_change += 2
+            self._out("⏳ 你的行動：觀望（不買不賣）")
+            if avg_price > 0 and current_price < avg_price * 0.8:
+                self._out("🚨 專業術語：【腳麻 / 凹單】")
+                self._out("💡 大白話：虧損已經超過 20% 了，你卻選擇蓋牌不看！不設定停損點放任虧損擴大，是破產的最快途徑！")
+            elif abs(change_percent) > 5:
+                self._out("📘 專業術語：【以靜制動】")
+                self._out("💡 大白話：市場波動劇烈，但你選擇不亂動，避免被多空雙巴。")
             else:
-                self._out("💡 大白話：市場沒行情，你選擇省下手續費去喝杯咖啡，很棒。")
-                fiq_change += 1
+                self._out("💡 大白話：市場沒有明顯方向，空手觀望也是一種操作。")
         else:
             self._out("❌ 收到無效指令")
-            fiq_change -= 1
             
-        self.fiq_score += fiq_change
-        
     def _check_wallet(self, cash, total_asset):
-        self._out("\n🚨 [ 錢包安全診斷 ]")
-        if cash < 15000:
-            self._out("⚠️ 【流動性危機】：現金太少！萬一遇到壞事件扣錢，你會陷入危機，甚至被迫低價賣掉股票。")
-            self.fiq_score -= 2
-        elif total_asset > 0 and cash > total_asset * 0.8:
-            self._out("💵 【資金閒置】：你的現金佔比太高了。這很安全，但也代表你錯失了讓資產跟著市場翻倍的機會。")
-        else:
-            self._out("💚 【黃金比例】：現金與股票比例適中，攻守兼備！")
+        self._out("\n🚨 [ 資金控管診斷 ]")
+        if total_asset == 0:
+            return
             
-    def _check_achievements(self, action, current_price, avg_price, change_percent, stock):
+        cash_ratio = cash / total_asset
+        
+        if cash_ratio < 0.05:
+            self._out("💥 【極度危險 / All-In】：你把超過 95% 的資金全押在股市裡！這代表你完全沒有保留『緊急預備金』，一旦遇到突發黑天鵝事件，你只能被迫低價變賣股票，這是通往破產的最快路徑！")
+        elif cash_ratio < 0.15:
+            self._out("⚠️ 【流動性偏低】：你的現金水位偏低，建議至少保留 20% 的現金，讓你在大跌時還有子彈可以危機入市。")
+        elif cash_ratio > 0.8:
+            self._out("💵 【資金閒置】：你的現金佔比過高（超過 80%）。這很安全，但也代表你的資產會漸漸被通貨膨脹吃掉。")
+        else:
+            self._out("💚 【黃金比例】：現金與股票配置適中（保有彈性與流動性），展現了專業的資金控管能力！")
+
+    def _check_achievements(self, action, current_price, avg_price, context_change, outcome_change, stock):
         new_achievements = []
         
-        # 1. 鑽石手：帳面虧損嚴重但死不賣 (或攤平)
+        # 1. 鑽石手：帳面虧損嚴重但死不賣
         if stock > 0 and avg_price > 0 and current_price < avg_price * 0.8 and action != "s":
             if "💎 鑽石手 (承受 -20% 虧損仍抱緊)" not in self.achievements:
                 new_achievements.append("💎 鑽石手 (承受 -20% 虧損仍抱緊)")
                 
-        # 2. 神槍手：在大跌時勇敢買進
-        if action == "b" and change_percent < -5:
+        # 2. 危機入市：在大跌時勇敢買進
+        if action == "b" and context_change < -5:
             if "🎯 危機入市 (在大跌超過 5% 時買進)" not in self.achievements:
                 new_achievements.append("🎯 危機入市 (在大跌超過 5% 時買進)")
                 
-        # 3. 跑得快：完美躲避暴跌 (透過 cause_and_effect 判斷)
-        if self.last_action == "s" and change_percent < -5:
-            if "🏃 神機妙算 (在暴跌前一週成功賣出逃頂)" not in self.achievements:
-                new_achievements.append("🏃 神機妙算 (在暴跌前一週成功賣出逃頂)")
+        # 3. 神機妙算：賣出後市場大跌
+        if action == "s" and outcome_change < -5:
+            if "🏃 神機妙算 (賣出後市場隨即暴跌)" not in self.achievements:
+                new_achievements.append("🏃 神機妙算 (賣出後市場隨即暴跌)")
+
+        # 4. 嚴格停損：虧損超過 10% 仍執行停損
+        if action == "s" and avg_price > 0 and ((current_price - avg_price) / avg_price) <= -0.10:
+            if "🏆 鐵血紀律 (虧損超過 10% 仍嚴格執行停損)" not in self.achievements:
+                new_achievements.append("🏆 鐵血紀律 (虧損超過 10% 仍嚴格執行停損)")
                 
-        # 4. 韭菜王：高點買，這週跌
-        if self.last_action == "b" and change_percent < -5:
+        # 5. 韭菜王：買完立刻大跌
+        if action == "b" and outcome_change < -5:
             if "💸 終極韭菜 (剛買完就遇上暴跌)" not in self.achievements:
                 new_achievements.append("💸 終極韭菜 (剛買完就遇上暴跌)")
                 
         for ach in new_achievements:
             self.achievements.add(ach)
             self._out(f"\n🌟 【解鎖成就！】：獲得徽章 {ach} 🌟")
-            self.fiq_score += 5 # 給予獎勵分數
             
     def _daily_lesson(self, week):
         self._out("\n💡 [ 今日財商進階課 ]")

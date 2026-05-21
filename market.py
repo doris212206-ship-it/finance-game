@@ -11,8 +11,8 @@ def load_stock_data():
 
     ticker = "6505.TW"
 
-    # 從 2015 到 2023 年之間隨機挑選一天作為起點
-    start_year = random.randint(2015, 2023)
+    # 從 2008 到 2023 年之間隨機挑選一天作為起點
+    start_year = random.randint(2008, 2023)
     start_month = random.randint(1, 12)
     start_day = random.randint(1, 28) # 避免大小月報錯
     

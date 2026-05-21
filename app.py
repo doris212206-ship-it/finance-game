@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from market import load_stock_data
 from education import FinancialAdvisor
-from events import draw_event
+from events import draw_event, historical_news
+from datetime import datetime
 
 # 頁面設定
 st.set_page_config(page_title="華爾街見習生", page_icon="📈", layout="wide")
@@ -19,7 +20,7 @@ if "initialized" not in st.session_state:
         st.session_state.df.columns = st.session_state.df.columns.get_level_values(0)
         
     st.session_state.MAX_WEEKS = 156
-    st.session_state.TARGET = 800000
+    st.session_state.TARGET = 1000000
     st.session_state.START_OFFSET = 30
     st.session_state.week = 1
     
@@ -39,6 +40,14 @@ if "initialized" not in st.session_state:
     st.session_state.game_over = False
     st.session_state.total_salary_net = 0   # 累計薪水淨收入
     st.session_state.total_event_net = 0    # 累計隨機事件淨收入
+    st.session_state.shown_news = set()     # 記錄已顯示的歷史新聞
+    
+    # 紀錄遊戲開始的第一天真實日期，避免播報遊戲開始前的新聞
+    start_date_obj = st.session_state.df["Date"].iloc[st.session_state.START_OFFSET]
+    if hasattr(start_date_obj, 'date'):
+        st.session_state.game_start_date = start_date_obj.date()
+    else:
+        st.session_state.game_start_date = datetime.strptime(str(start_date_obj)[:10], "%Y-%m-%d").date()
 
 # =====================
 # 側邊欄：投資儀表板
@@ -68,8 +77,10 @@ with st.sidebar:
     current_date = df["Date"].iloc[day_index]
     if hasattr(current_date, 'strftime'):
         current_date_str = current_date.strftime("%Y年%m月%d日")
+        chart_date_str = current_date.strftime("%Y-%m-%d")
     else:
         current_date_str = str(current_date)[:10]
+        chart_date_str = current_date_str
     
     st.metric("週數", f"{display_week} / {st.session_state.MAX_WEEKS}")
     st.metric("📅 目前日期", current_date_str)
@@ -105,10 +116,10 @@ with st.expander("📖 遊戲規則與背景 (點擊展開/收起)", expanded=(s
     🏭 **所屬產業：{sector}｜{industry}**
 
     **【你的任務】**
-    - 💰 **起始資金**：$500,000
+    - 💰 **起始資金**：\$500,000
     - ⏳ **遊戲時間**：156 週（3 年）
-    - 🏆 **目標總資產**：$800,000 (達標即可通關！)
-    - 💼 **薪水機制**：每 4 週發薪 $50,000，同時扣除生活費 $40,000，淨入帳 $10,000
+    - 🏆 **目標總資產**：\$800,000 (達標即可通關！)
+    - 💼 **薪水機制**：每 4 週發薪 \$50,000，同時扣除生活費 \$40,000，淨入帳 \$10,000
 
     **【操作說明】**
     - 遊戲每週會推進一次，你必須在「每週五」根據走勢圖做出決策。
@@ -166,7 +177,7 @@ with main_col_left:
         y_max = max(y_max, st.session_state.avg_price * 1.02)
         
     ax.set_ylim(y_min, y_max)
-    ax.set_title(f"Market View - {current_date_str}  (Week {display_week} / {st.session_state.MAX_WEEKS})", fontsize=13, fontweight="bold")
+    ax.set_title(f"Market View - {chart_date_str}  (Week {display_week} / {st.session_state.MAX_WEEKS})", fontsize=13, fontweight="bold")
     ax.grid(True, linestyle="--", alpha=0.4)
     ax.legend(loc='upper left', fontsize='small')
     
@@ -177,7 +188,7 @@ with main_col_left:
     # =====================
     if st.session_state.game_over:
         st.success("🎉 遊戲結束！")
-        st.subheader(f"💰 最終總資產：${total_asset:,.2f} (目標: ${st.session_state.TARGET:,.0f})")
+        st.subheader(f"💰 最終總資產：\${total_asset:,.2f} (目標: \${st.session_state.TARGET:,.0f})")
         
         # 計算純投資損益
         # 公式：最終資產 - 起始資金 - 累計薪水淨收入 - 累計事件淨收入
@@ -199,6 +210,7 @@ with main_col_left:
         if total_asset >= st.session_state.TARGET:
             st.balloons()
             st.success("🏆 恭喜你達成目標金額，成功通關！")
+            st.session_state.game_over = True
         else:
             st.error("📉 很可惜，你沒有達到目標金額。")
                 
@@ -230,7 +242,7 @@ with main_col_left:
                     st.session_state.stock += qty
                     st.session_state.avg_price = stock_cost / st.session_state.stock
                     st.session_state.cash -= total_cost
-                    action_log.append(f"✅ 成功買入 {qty} 股 (手續費：${fee:.2f})")
+                    action_log.append(f"✅ 成功買入 {qty} 股 (手續費：\${fee:.2f})")
                     current_color = "green"
                 else:
                     st.session_state.logs = ["❌ 買入失敗：現金不足"]
@@ -247,7 +259,7 @@ with main_col_left:
                     st.session_state.stock -= qty
                     if st.session_state.stock == 0:
                         st.session_state.avg_price = 0
-                    action_log.append(f"✅ 成功賣出 {qty} 股 (手續費：${fee:.2f} / 交易稅：${tax:.2f})")
+                    action_log.append(f"✅ 成功賣出 {qty} 股 (手續費：\${fee:.2f} / 交易稅：\${tax:.2f})")
                     current_color = "blue"
                 else:
                     st.session_state.logs = ["❌ 賣出失敗：股票不足"]
@@ -262,13 +274,38 @@ with main_col_left:
             st.session_state.trade_prices_y.append(current_price)
             st.session_state.trade_actions_color.append(current_color)
             
+            # 計算下一週的價格 (即將揭曉的結果)
+            next_week = st.session_state.week + 1
+            next_display_week = min(next_week, st.session_state.MAX_WEEKS)
+            next_day_index = st.session_state.START_OFFSET + next_display_week * 5
+            next_day_index = min(next_day_index, len(df) - 1)
+            next_close = df["Close"].iloc[next_day_index]
+            next_price = float(next_close.iloc[0] if hasattr(next_close, "iloc") else next_close)
+            
             # 呼叫導師系統
             current_ma10 = history_ma10.iloc[-1] if not pd.isna(history_ma10.iloc[-1]) else current_price
             advisor_logs = st.session_state.advisor.evaluate(
-                action, current_price, st.session_state.prev_price, 
+                action, current_price, next_price, st.session_state.prev_price, 
                 st.session_state.avg_price, current_ma10, 
                 st.session_state.cash, total_asset, st.session_state.stock, ui_mode=True
             )
+            
+            # ===== 歷史新聞判定 =====
+            # 取得本週的真實日期
+            current_date_obj = df["Date"].iloc[day_index]
+            if hasattr(current_date_obj, 'date'):
+                current_date_val = current_date_obj.date()
+            else:
+                current_date_val = datetime.strptime(str(current_date_obj)[:10], "%Y-%m-%d").date()
+                
+            news_logs = []
+            for i, news in enumerate(historical_news):
+                if i not in st.session_state.shown_news:
+                    news_date = datetime.strptime(news["date"], "%Y-%m-%d").date()
+                    # 如果新聞發生在遊戲開始之後，且剛好在今天或之前，就觸發
+                    if st.session_state.game_start_date <= news_date <= current_date_val:
+                        news_logs.append(f"📰 【歷史新聞快訊】 {news['date']} - {news['text']}")
+                        st.session_state.shown_news.add(i)
             
             # 處理隨機事件 (每週一次)
             event_logs = []
@@ -278,9 +315,9 @@ with main_col_left:
             if event["amount"] != 0:
                 event_logs.append(f"📌 【隨機事件】：{event['name']}")
                 if event["amount"] > 0:
-                    event_logs.append(f"🎉 獲得 ${event['amount']}")
+                    event_logs.append(f"🎉 獲得 \${event['amount']}")
                 elif event["amount"] < 0:
-                    event_logs.append(f"⚠️ 損失 ${abs(event['amount'])}")
+                    event_logs.append(f"⚠️ 損失 \${abs(event['amount'])}")
                     
             # 處理薪水 (每四週一次)
             if week % 4 == 0:
@@ -289,7 +326,7 @@ with main_col_left:
                 net = salary - living_cost
                 st.session_state.cash += net
                 st.session_state.total_salary_net += net  # 追蹤累計
-                event_logs.append(f"💼 【發薪日】薪資 ${salary:,} 已入帳，扣除生活費 ${living_cost:,}，實際淨入帳 ${net:,}")
+                event_logs.append(f"💼 【發薪日】薪資 \${salary:,} 已入帳，扣除生活費 \${living_cost:,}，實際淨入帳 \${net:,}")
             
             # ===== 現金不足時強制賣股 =====
             if st.session_state.cash < 0 and st.session_state.stock > 0:
@@ -318,7 +355,7 @@ with main_col_left:
                 st.session_state.game_over = True
                 
             week_separator = [f"📅 --- 【 第 {week} 週 結算 】 ---"]
-            st.session_state.logs = week_separator + action_log + event_logs + advisor_logs + st.session_state.logs
+            st.session_state.logs = week_separator + news_logs + action_log + event_logs + advisor_logs + st.session_state.logs
     
         # UI 配置
         st.container()
