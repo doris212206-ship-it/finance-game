@@ -4,7 +4,23 @@ import pandas as pd
 from market import load_stock_data
 from education import FinancialAdvisor
 from events import draw_event, historical_news
-from datetime import datetime
+from datetime import datetime, timedelta
+
+
+# 自訂歷史新聞
+# 若新聞日期不是星期五，會在遊戲中提前一週觸發顯示。
+historical_news = [
+    {"date": "2008-07-10", "text": "伊朗試射九枚飛彈，宣稱已準備進一步軍事行動"},
+    {"date": "2008-09-09", "text": "市場憂心雷曼兄弟財務危機，道瓊暴跌近300點"},
+    {"date": "2011-02-22", "text": "利比亞局勢動盪衝擊市場，國際油價大漲"},
+    {"date": "2014-11-13", "text": "布蘭特原油跌破80美元，創四年新低，市場關注OPEC動向"},
+    {"date": "2018-03-23", "text": "美中貿易戰開打！ 川普下令對中國課徵1.76兆關稅"},
+    {"date": "2020-01-05", "text": "WHO:中國出現不明原因肺炎病例"},
+    {"date": "2020-03-06", "text": "OPEC與俄羅斯減產談判破裂，國際油價重挫"},
+    {"date": "2020-02-24", "text": "烏克蘭稱俄軍自俄羅斯、白俄與克里米亞全面進攻"},
+    {"date": "2024-05-07", "text": "中國產能過剩衝擊全球化工產業"},
+    {"date": "2025-08-20", "text": "中國將整頓石化產業，以化解產能過剩問題"},
+]
 
 # 頁面設定
 st.set_page_config(page_title="華爾街見習生", page_icon="📈", layout="wide")
@@ -461,8 +477,19 @@ with game_col_left:
             for i, news in enumerate(historical_news):
                 if i not in st.session_state.shown_news:
                     news_date = datetime.strptime(news["date"], "%Y-%m-%d").date()
-                    if st.session_state.game_start_date <= news_date <= current_date_val:
-                        news_logs.append(f"📰 【歷史新聞快訊】 {news['date']} - {news['text']}")
+
+                    # 若新聞日期不是星期五，提前一週在遊戲紀錄中顯示。
+                    # weekday(): Monday=0, Friday=4
+                    if news_date.weekday() == 4:
+                        trigger_date = news_date
+                    else:
+                        trigger_date = news_date - timedelta(days=7)
+
+                    # 遊戲每週推進一次，因此只要目前日期已經到達觸發日就顯示一次。
+                    if st.session_state.game_start_date <= trigger_date <= current_date_val:
+                        news_logs.append(
+                            f"📰 【歷史新聞快訊】 {news['date']} - {news['text']}"
+                        )
                         st.session_state.shown_news.add(i)
             
             # 處理隨機事件
