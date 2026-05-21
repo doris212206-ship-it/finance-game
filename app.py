@@ -28,8 +28,21 @@ if "initialized" not in st.session_state:
     st.session_state.stock = 0
     st.session_state.avg_price = 0
     
+    if st.session_state.START_OFFSET >= len(st.session_state.df):
+    # 若起始偏移超出資料長度，調整為最後一筆資料的索引
+    st.session_state.START_OFFSET = max(0, len(st.session_state.df) - 1)
+    st.warning(f"START_OFFSET 超出資料長度，已自動調整為 {st.session_state.START_OFFSET}")
+# 取得起始收盤價
+initial_close = st.session_state.df["Close"].iloc[st.session_state.START_OFFSET]
+st.session_state.prev_price = float(initial_close.iloc[0] if hasattr(initial_close, "iloc") else initial_close)
+    # 若起始偏移超出資料長度，調整為最後一筆資料的索引
+    st.session_state.START_OFFSET = max(0, len(st.session_state.df) - 1)
+        st.session_state.START_OFFSET = max(0, len(st.session_state.df) - 1)
+        st.warning(f"START_OFFSET 超出資料長度，已自動調整為 {st.session_state.START_OFFSET}")
+    
+    # 取得起始收盤價
     initial_close = st.session_state.df["Close"].iloc[st.session_state.START_OFFSET]
-    st.session_state.prev_price = float(initial_close.iloc[0] if hasattr(initial_close, "iloc") else initial_close)
+    st.session_state.prev_price = float(initial_close)  # 直接轉成 float
     
     st.session_state.trade_days_x = []
     st.session_state.trade_prices_y = []
@@ -42,7 +55,7 @@ if "initialized" not in st.session_state:
     st.session_state.total_event_net = 0    # 累計隨機事件淨收入
     st.session_state.shown_news = set()     # 記錄已顯示的歷史新聞
     
-    # 紀錄遊戲開始的第一天真實日期，避免播報遊戲開始前的新聞
+    # 記錄遊戲開始的第一天真實日期
     start_date_obj = st.session_state.df["Date"].iloc[st.session_state.START_OFFSET]
     if hasattr(start_date_obj, 'date'):
         st.session_state.game_start_date = start_date_obj.date()
