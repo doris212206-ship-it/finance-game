@@ -59,9 +59,44 @@ def load_stock_data():
 
     # ===== 防呆處理 =====
     df = df.dropna()
+
+    # yfinance 有時會回傳 MultiIndex 欄位，例如：
+    # ("Close", "6505.TW")、("Date", "")
+    # 若直接 df[["Date", "Close"]]，就可能出現 KeyError: "['Date'] not in index"
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [
+            col[0] if isinstance(col, tuple) else col
+            for col in df.columns
+        ]
+
     df = df.reset_index()
 
+    # reset_index 後仍再檢查一次，避免 Date / Close 欄位被包在 MultiIndex 或其他格式中
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [
+            col[0] if isinstance(col, tuple) else col
+            for col in df.columns
+        ]
+
+    # 統一欄位名稱成字串，避免不同 pandas / yfinance 版本造成欄位型別不一致
+    df.columns = [str(col) for col in df.columns]
+
+    # 如果日期欄位不是 Date，而是 index 或 Datetime，改名成 Date
+    if "Date" not in df.columns:
+        for possible_date_col in ["index", "Datetime", "datetime", "date"]:
+            if possible_date_col in df.columns:
+                df = df.rename(columns={possible_date_col: "Date"})
+                break
+
+    if "Date" not in df.columns or "Close" not in df.columns:
+        raise RuntimeError(
+            f"股票資料欄位格式異常，目前欄位為：{list(df.columns)}，找不到 Date 或 Close。"
+        )
+
     # 只保留需要的欄位
-    df = df[["Date", "Close"]]
+    df = df[["Date", "Close"]].copy()
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
+    df = df.dropna(subset=["Date", "Close"]).reset_index(drop=True)
 
     return df
