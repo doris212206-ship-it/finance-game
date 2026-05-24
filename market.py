@@ -62,6 +62,8 @@ def load_stock_data():
     df = df.reset_index()
 
     # 只保留需要的欄位
+    if 'Date' not in df.columns:
+    df = df.reset_index()
     df = df[["Date", "Close"]]
 
     return df
