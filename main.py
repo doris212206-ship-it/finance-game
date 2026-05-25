@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 # =====================
 # 遊戲設定與開場
 # =====================
-MAX_WEEKS = 20
-TARGET = 150000
-cash = 100000
+MAX_WEEKS = 156
+TARGET = 800000
+cash = 500000
 stock = 0
 avg_price = 0
 
