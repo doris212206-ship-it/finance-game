@@ -36,7 +36,7 @@ if "initialized" not in st.session_state:
         st.session_state.df.columns = st.session_state.df.columns.get_level_values(0)
         
     st.session_state.MAX_WEEKS = 156
-    st.session_state.TARGET = 1000000
+    st.session_state.TARGET = 800000
     st.session_state.START_OFFSET = 30
     st.session_state.week = 1
     
@@ -383,7 +383,7 @@ with game_col_left:
         else:
             st.error(f"📉 **你靠投資虧了 ${abs(invest_gain):,.0f}。**（虧損率：{abs(invest_gain)/START_CAPITAL*100:.1f}%）")
         
-        if total_asset >= st.session_state.TARGET:
+        if st.session_state.cash >= st.session_state.TARGET:
             st.balloons()
             st.success("🏆 恭喜你達成目標金額，成功通關！")
             st.session_state.game_over = True
@@ -535,17 +535,17 @@ with game_col_left:
             st.session_state.prev_price = current_price
             st.session_state.week += 1
 
-            # ===== 提前達標判定 =====
-            # 每週結算後，重新計算目前總資產。
-            # 只要總資產達到投資目標，就提前結束遊戲。
+            # ===== 現金提前達標判定 =====
+            # 注意：這裡判斷的是「現金」是否達到目標，而不是總資產。
+            # 只要現金達到 800,000，就提前結束遊戲。
             current_total_asset = (
                 st.session_state.cash +
                 st.session_state.stock * current_price
             )
 
-            if current_total_asset >= st.session_state.TARGET:
+            if st.session_state.cash >= st.session_state.TARGET:
                 st.session_state.logs = (
-                    ["🎉 恭喜！你已提前達成投資目標，遊戲結束！"]
+                    [f"🎉 恭喜！你的現金已達 ${st.session_state.cash:,.0f}，成功達成 ${st.session_state.TARGET:,.0f} 目標，遊戲提前結束！"]
                     + st.session_state.logs
                 )
                 st.session_state.game_over = True
