@@ -459,11 +459,55 @@ with main_col_left:
 
         st.divider()
         st.markdown("#### 📊 投資損益分析")
+
+        # Streamlit 的 st.metric 在窄欄位中會把數字截斷成「$...」。
+        # 這裡改用自訂 HTML 顯示，確保遊戲結束時完整呈現所有金額。
+        st.markdown("""
+        <style>
+        .analysis-metric-label {
+            font-size: 0.95rem;
+            color: #6b7280;
+            margin-bottom: 0.15rem;
+            white-space: normal;
+        }
+        .analysis-metric-value {
+            font-size: clamp(1.15rem, 1.7vw, 1.65rem);
+            font-weight: 700;
+            line-height: 1.2;
+            color: #1f2937;
+            white-space: normal;
+            word-break: keep-all;
+            overflow: visible;
+            text-overflow: clip;
+        }
+        .analysis-metric-card {
+            padding: 0.15rem 0;
+            min-width: 0;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        def render_analysis_metric(label, value):
+            st.markdown(
+                f"""
+                <div class="analysis-metric-card">
+                    <div class="analysis-metric-label">{label}</div>
+                    <div class="analysis-metric-value">{value}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
         col_a, col_b, col_c, col_d = st.columns(4)
-        col_a.metric("起始資金", f"${START_CAPITAL:,.0f}")
-        col_b.metric("薪水淨收入", f"${st.session_state.total_salary_net:,.0f}")
-        col_c.metric("事件淨收益", f"${st.session_state.total_event_net:,.0f}")
-        col_d.metric("投入股市成本", f"${invested_cost:,.0f}")
+        with col_a:
+            render_analysis_metric("起始資金", f"${START_CAPITAL:,.0f}")
+        with col_b:
+            render_analysis_metric("薪水淨收入", f"${st.session_state.total_salary_net:,.0f}")
+        with col_c:
+            render_analysis_metric("事件淨收益", f"${st.session_state.total_event_net:,.0f}")
+        with col_d:
+            render_analysis_metric("投入股市成本", f"${invested_cost:,.0f}")
+
         st.caption("ROI 使用「投資損益 ÷ 累計投入股市成本」計算；總資產成長率則使用「總資產變化 ÷ 起始資金」計算。")
 
         roi_text = "尚未投入股市，無法計算 ROI。" if invested_cost == 0 else f"投資 ROI：{investment_roi:.1f}%"
