@@ -529,6 +529,15 @@ with main_col_left:
             st.error("📉 很可惜，你沒有達到目標金額。")
 
         st.divider()
+        st.markdown("#### 🏅 徽章成就")
+        achievements = sorted(st.session_state.advisor.achievements)
+        if achievements:
+            for achievement in achievements:
+                st.success(f"🏅 {achievement}")
+        else:
+            st.info("本局尚未解鎖徽章，再挑戰一次看看！")
+
+        st.divider()
         if st.button("🔄 重新開始遊戲", use_container_width=True):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
@@ -609,11 +618,16 @@ with main_col_left:
 
             # 呼叫導師系統
             current_ma10 = history_ma10.iloc[-1] if not pd.isna(history_ma10.iloc[-1]) else current_price
-            st.session_state.advisor.evaluate(
+            advisor_logs = st.session_state.advisor.evaluate(
                 action, current_price, next_price, st.session_state.prev_price,
                 st.session_state.avg_price, current_ma10,
                 st.session_state.cash, latest_total_asset, st.session_state.stock, ui_mode=True
             )
+            achievement_logs = [
+                log.strip()
+                for log in advisor_logs
+                if "解鎖成就" in log or "獲得徽章" in log
+            ]
             outcome_change = ((next_price - current_price) / current_price) * 100 if current_price else 0
             bias_percent = ((current_price - current_ma10) / current_ma10) * 100 if current_ma10 else 0
 
@@ -730,7 +744,7 @@ with main_col_left:
             if week % 3 == 1:
                 quote_logs.append(get_investment_quote())
             st.session_state.logs = (
-                weekly_summary + action_log + news_logs + event_logs + strategy_notes + quote_logs + st.session_state.logs
+                weekly_summary + action_log + achievement_logs + news_logs + event_logs + strategy_notes + quote_logs + st.session_state.logs
             )
 
         # =====================
