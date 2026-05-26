@@ -41,21 +41,25 @@ def load_stock_data():
     if df.empty:
         raise RuntimeError("這次沒有抓到股票資料，請重新整理頁面再試一次。")
 
-    # 將隨機區間記錄在 df.attrs 中，方便後續在結算畫面揭曉
-    df.attrs['history_start'] = start_str
-    df.attrs['history_end'] = end_str
-    df.attrs['ticker'] = ticker
-    
+    # 將股票基本資訊先存成一般變數。
+    # 注意：後面 df.reset_index()、df[["Date", "Close"]].copy() 等處理可能讓 df.attrs 遺失，
+    # 所以最後 return 前會再把這些資訊寫回 df.attrs。
+    history_start = start_str
+    history_end = end_str
+
+    # 6505.TW 是固定操盤標的；若 yfinance 沒有回傳產業資訊，使用這組備援資料，避免畫面顯示「未知」。
+    company_name = "台塑石化股份有限公司"
+    sector = "能源"
+    industry = "石油煉製與行銷"
+
     # 抓取公司基本資訊（名稱、產業）
     try:
         info = yf.Ticker(ticker).info
-        df.attrs['company_name'] = info.get('longName', ticker)
-        df.attrs['sector'] = info.get('sector', '未知產業')
-        df.attrs['industry'] = info.get('industry', '未知細分產業')
+        company_name = info.get("longName") or info.get("shortName") or company_name
+        sector = info.get("sector") or sector
+        industry = info.get("industry") or industry
     except Exception:
-        df.attrs['company_name'] = ticker
-        df.attrs['sector'] = '未知'
-        df.attrs['industry'] = '未知'
+        pass
 
     # ===== 防呆處理 =====
     df = df.dropna()
@@ -98,5 +102,13 @@ def load_stock_data():
     df["Date"] = pd.to_datetime(df["Date"])
     df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
     df = df.dropna(subset=["Date", "Close"]).reset_index(drop=True)
+
+    # 最後再寫入 attrs，避免前面的 DataFrame 清理流程讓公司資訊遺失。
+    df.attrs["history_start"] = history_start
+    df.attrs["history_end"] = history_end
+    df.attrs["ticker"] = ticker
+    df.attrs["company_name"] = company_name
+    df.attrs["sector"] = sector
+    df.attrs["industry"] = industry
 
     return df
